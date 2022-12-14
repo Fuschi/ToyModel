@@ -12,3 +12,6 @@ Depends:
   R (>= 3.6.0),
   stats (>= 3.6.0),
   mvtnorm (>= 1.1)
+Suggests:
+  VGAM (>= 1.1),
+  HurdleTruncatedLogNormal

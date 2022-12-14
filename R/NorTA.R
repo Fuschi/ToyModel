@@ -37,7 +37,7 @@ NorTA <- function(n,cor,dist,param=list()){
   if(length(cor)==0){
     stop("cor has length 0, what happen?")
   } else if(length(cor)==1){
-    if(!is.numeric(cor) | abs(cor)>1) stop("if cor is a number must be in range [0,1]")
+    if(!is.numeric(cor) | abs(cor)>1) stop("if cor is a number must be in range [-1,1]")
   } else if(length(cor)>1){
     if(!is.numeric(cor) | !isSymmetric(cor) | any(diag(cor)!=1) | any(abs(cor)>1))
       stop("cor must be a symmetric matrix with all elements in range [-1,1] and 
@@ -50,14 +50,10 @@ NorTA <- function(n,cor,dist,param=list()){
   #-----------------------------------#
   if(length(param)!=0){
     lengths <- lapply(param, length)
-    if(length(unique(lengths))!=1){
-      stop("all elemnts in param must have the same length")
-    } else if(all(lengths==1)){
-      param <- lapply(param, function(x)rep(x,2))
-    } else if(all(lengths==D)){
-      stop("all the elements in param must have the same dimension of cor or 
-           equal to 1 (in case they are repeated for all the same)")
-    }
+    if(!all(lengths==1 | lengths==D)){
+      stop("all elemnts in param must have lengts equal to 1 or equal to the dimension of cor")
+    } 
+    param <- lapply(param, function(x) if(length(x)==1) rep(x,D) else x )
   }
   
   rnorm <- mvtnorm::rmvnorm(n=n,sigma=cor)
@@ -69,6 +65,4 @@ NorTA <- function(n,cor,dist,param=list()){
   })
   
   return(ans)
-    
-  
 }
