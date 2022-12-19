@@ -17,7 +17,7 @@ correlation between two variables.}
 
 \item{param}{list containing the parameters of the distribution for each
 dimension. All elements in the list must be named as the parameter name of
-the distribution. If the elements have all lengths 1 the values are ripetuted
+the distribution. If the elements have all lengths 1 the values are repeated
 for all the dimensions.}
 }
 \description{
