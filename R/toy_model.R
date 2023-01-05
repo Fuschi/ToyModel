@@ -109,7 +109,7 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
   })
   
   if(force.positive && any(Y<0)) Y <- Y - min(Y)
-  Y[,1] <- Y[,1]*D
+  Y[,1] <- Y[,1]*M
   
   if(any(Y<0)) stop("the transformed data Y cannot have negative values.")
   
