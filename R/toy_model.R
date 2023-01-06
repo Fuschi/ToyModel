@@ -72,7 +72,9 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
   }
   #check D
   #-----------------------------------#
-  if(!is.numeric(D) | D<5 | round(D)!=D) stop("D must be positve integer number greater or equal to 5")
+  if(!missing(D)){
+    if(!is.numeric(D) | D<5 | round(D)!=D) stop("D must be positve integer number greater or equal to 5")
+  }
   #check param
   #-----------------------------------#
   if(length(param)!=0){
