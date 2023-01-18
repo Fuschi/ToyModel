@@ -102,24 +102,25 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
     D <- nrow(cor)
   }
   
-  X <- mvtnorm::rmvnorm(n=n,sigma=cor)
-  unif <- stats::pnorm(X)
+  normal <- mvtnorm::rmvnorm(n=n,sigma=cor)
+  unif <- stats::pnorm(normal)
   
-  Y <- sapply(1:nrow(cor), function(idx){
+  NorTA <- sapply(1:nrow(cor), function(idx){
     sub.param <- c(list(p=unif[,idx]),lapply(param, `[[`, idx))
     do.call(what=paste("q",dist,sep=""),args=sub.param)
   })
   
-  if(force.positive && any(Y<0)) Y <- Y - min(Y)
-  Y[,1] <- Y[,1]*M
+  if(force.positive && any(NorTA<0)) NorTA <- NorTA - min(NorTA)
   
-  if(any(Y<0)) stop("the transformed data Y cannot have negative values.")
+  NorTA[,1] <- NorTA[,1]*M
   
-  corXhat = stats::cor(X,method=method)
-  corYhat = stats::cor(Y,method=method)
+  if(any(NorTA<0)) stop("the transformed data NorTA cannot have negative values.")
   
-  L1 <- Y/rowSums(Y)
-  corL1 <- stats::cor(L1,method=method)
+  cor_normal = stats::cor(normal,method=method)
+  cor_NorTA = stats::cor(NorTA,method=method)
+  
+  L1 <- NorTA/rowSums(NorTA)
+  cor_L1 <- stats::cor(L1,method=method)
   
   clr <- function(X){
     if(any(X==0)) X <- X+1
@@ -127,19 +128,19 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
     return(as.matrix(log(X) - ref))
   }
   
-  CLR <- clr(Y)
-  corCLR <- stats::cor(CLR,method=method)
+  CLR <- clr(NorTA)
+  cor_CLR <- stats::cor(CLR,method=method)
   
   results <- list()
   results$cor <- cor
-  results$normal <- X
-  results$cor_normal <- corXhat 
-  results$NorTA <- Y
-  results$cor_NorTA <- corYhat
+  results$normal <- normal
+  results$cor_normal <- cor_normal 
+  results$NorTA <- NorTA
+  results$cor_NorTA <- cor_NorTA
   results$L1 <- L1
-  results$cor_L1 <- corL1
+  results$cor_L1 <- cor_L1
   results$CLR <- CLR
-  results$cor_CLR <- corCLR
+  results$cor_CLR <- cor_CLR
   class(results) <- "toy_model"
   
   return(results)
@@ -171,7 +172,7 @@ graph_toy_model <- function(obj,what){
   g <- graph_from_adjacency_matrix(adj=cor,mode="undirected",weighted=T,diag=F)
   
   V(g)$size <- 2 + (( colMeans(x) / max(colMeans(x))) * 4)
-
+  
   E(g)$width <- abs(E(g)$weight)
   E(g)$color <- ifelse(E(g)$weight>=0,rgb(0,0,1),rgb(1,0,0))
   
@@ -193,7 +194,7 @@ graph_toy_model <- function(obj,what){
 #'
 #' @export
 plot.toy_model <- function(obj,what,...){
- 
+  
   if(class(obj)!="toy_model") stop("obj must belong to toy_model class")
   what=match.arg(what,c("NorTA","L1","CLR"))
   
