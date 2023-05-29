@@ -7,35 +7,40 @@
 #' correlation structure and sample heterogeneity.
 #'
 #' @param n number of observations.
-#' @param cor correlation structure of resulting data; cor must be a number or a
-#' correlation matrix. If it is a number it is understood that it is the 
-#' correlation between two variables.
-#' @param D alternative choice to cor and indicates dimensionality. Produces a 
-#' correlation matrix of dimension D with by default two pairs of strongly 
-#' correlated variables, one positively and one negatively with correlations 
-#' values equal to +0.8 and -0.8. D cannot take values less than 5.
+#' @param cor correlation structure of final data, it can be a matrix or a number.
+#' If it's a matrix it must be symmetric, with diagonal elements all equal to 1 and
+#' with all values in range \[-1,1\]. The size of cor matrix implies the dimensions 
+#' of the resulting simulated data. Instead, if cor is a number, it 
+#' indicates the correlation between only two variables.
 #' @param M magnification factor, real positive number that modify the 
-#' heterogeneity of the samples. In practice the function multiplies by a 
-#' variable by the value of M.
-#' @param dist characters indicate the chosen distribution.
-#' @param param list containing the parameters of the distribution for each 
-#' dimension. All elements in the list must be named as the parameter name of
-#' the distribution. If the elements have all lengths 1 the values are repeated
-#' for all the dimensions.
+#' heterogeneity of the samples. In practice the first variable is multiplied by 
+#' the factor M.
+#' @param qdist qdist quantile function of the selected distribution, it must the vector
+#' of probability as first argument called p. The other parameters names must match with
+#' the ones present in param list.
+#' @param param param named array or matrix/data.frame with parameters of the selected target 
+#' distribution indicated in qdist. If params is a matrix then it must contain 
+#' the parameters of the final distribution along the columns and rows express 
+#' each dimension equal to the dimension of the cor matrix, instead if it is a 
+#' vector the parameters are repeated for each dimension. The names of the columns,
+#' or of the vector elements, must be equal to the function parameters of qdist.
+#' If some parameters are missing then the default values of the qdist function 
+#' are chosen. Default value is NULL that indicates to use always the default 
+#' parameters of qdist.
 #' @param method type of correlation used. Possible choices are "pearson", 
 #' "kendall", "spearman" (default pearson). 
 #' @param seed random seed for reproducibility (default 42).
-#' @param force.positive logical indicates when to force all elements of Y
-#' to be positive number adding the minimum to all others (this passage does not
-#' affect correlations).
+#' @param force.positive logical, indicates when to force all generated NorTA 
+#' data to positive numbers, adding the minimum to all others (this passage does 
+#' not affect correlations).
 #'
-#' @returns \code{toy_model} returns and object of class "toy_model" containing:
+#' @returns returns an object of class "toy_model" containing:
 #' \itemize{
 #'  \item cor input correlation matrix.
-#'  \item normal generated gaussian data.
+#'  \item normal generated Gaussian data.
 #'  \item cor_normal correlation matrix of normal.
 #'  \item NorTA generated data of choosen distribution.
-#'  \item cor_NorTA correlation matrix of Y.
+#'  \item cor_NorTA correlation matrix of NorTA.
 #'  \item L1 relative abundances of NorTA.
 #'  \item cor_L1 correlation matrix of L1.
 #'  \item CLR matrix of abundances of clr transformed data from NorTA.
@@ -46,47 +51,49 @@
 #' @importFrom stats pnorm cor
 #' 
 #' @export
-toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
+toy_model <- function(n,cor,M,qdist,param=NULL,method="pearson",seed=42,
                       force.positive=FALSE){
   
-  #check n
+  # START CHECKS
+  #----------------------------------------------------------------------------#
+  
+  # n
   #-----------------------------------#
   if(!is.numeric(n) | n <=0 | round(n)!=n) stop("n must be positve integer number")
-  #check dist
+  # qdist
   #-----------------------------------#
-  ifelse(is.character(dist), 
-         qdist<-paste("q",dist,sep=""),
-         stop("dist must be a character string"))
-  if(!exists(qdist))stop(paste("quantile function",qdist,
-                               "has not been found, maybe you need to include the required package?"))
-  #check cor and D
+  if(!is.function(qdist)) stop("qdist must be a function")
+  if( !("p"%in%names(formals(qdist))) ) stop("p must be an argument of the quantile function qdist, it's where the probabilities are assigned")
+  # cor
   #-----------------------------------#
-  if(missing(cor) && missing(D)) stop("cor and D cannot be unassigned togheter")
-  if(!missing(cor) && !missing(D)) stop("cor and D cannot be assigned togheter")
-  #check cor
-  #-----------------------------------#
-  if(!missing(cor)){
+  if(length(cor)==0){
+    stop("cor has length 0, what happen?")
+  } else if(length(cor)==1){
+    if(!is.numeric(cor) | abs(cor)>1) stop("if cor is a number must be in range [-1,1]")
+  } else if(length(cor)>1){
     if(!is.numeric(cor) | !isSymmetric(cor) | any(diag(cor)!=1) | any(abs(cor)>1))
-      stop("cor must be a symmetric matrix with all elements in range [-1,1] and 
-           with all elements values equal to 1")
+      stop("cor must be a symmetric matrix with all elements in range [-1,1] and all
+           elements on the diagonal equal to 1.")
   }
-  #check D
+  # Set input parameters
   #-----------------------------------#
-  if(!missing(D)){
-    if(!is.numeric(D) | D<5 | round(D)!=D) stop("D must be positve integer number greater or equal to 5")
-  }
-  #check param
+  if(length(cor)==1) cor <- matrix(c(1,cor,cor,1),nrow=2)
+  D <- nrow(cor)
+  # Check param 
   #-----------------------------------#
-  if(length(param)!=0){
-    lengths <- lapply(param, length)
-    if(!all(lengths==1 | lengths==D)){
-      stop("all elemnts in param must have lengts equal to 1 or equal to the dimension of cor")
-    } 
-    param <- lapply(param, function(x) if(length(x)==1) rep(x,D) else x )
+  if(!is.null(param)){
+    
+    if(length(dim(param))>2) stop("param must be a named vector or a matrix/data.frame")
+    if(is.null(dim(param))) param <- as.matrix(t(param))
+    if(is.null(colnames(param))) stop("The parameter names of the target distribution could not be found in param")
+    if( !all(colnames(param) %in% names(formals(qdist))) ) stop("Find at least a parameter in param not present in the arguments of qdist")
+    
+    if(nrow(param)==1) param <- do.call(rbind, replicate(D, param, simplify=FALSE)) 
+    param <- as.matrix(param)
   }
   #check M
   #-----------------------------------#
-  if(!is.numeric(M) | M<=0 | round(M)!=M) stop("M must be positve number")
+  if(!is.numeric(M) | M<=0) stop("M must be positve number")
   #check method
   #-----------------------------------#
   method  <- match.arg(method,c("pearson", "kendall", "spearman"))
@@ -102,13 +109,21 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
     D <- nrow(cor)
   }
   
-  normal <- mvtnorm::rmvnorm(n=n,sigma=cor)
-  unif <- stats::pnorm(normal)
+  rnorm <- mvtnorm::rmvnorm(n=n,sigma=cor)
+  unif <- stats::pnorm(rnorm)
   
-  NorTA <- sapply(1:nrow(cor), function(idx){
-    sub.param <- c(list(p=unif[,idx]),lapply(param, `[[`, idx))
-    do.call(what=paste("q",dist,sep=""),args=sub.param)
-  })
+  NorTA <- matrix(0,nrow=n, ncol=D); colnames(NorTA) <- colnames(cor)
+  for(d in 1:D){
+    
+    ifelse(is.null(param),
+           
+           param.d <- list(p=unif[,d]),
+           
+           param.d <- c(list(p=unif[,d]),
+                        lapply(split(param[d,], names(param[d,])), unname)))
+    
+    NorTA[,d] <- do.call(what=qdist,args=param.d)
+  }
   
   if(force.positive && any(NorTA<0)) NorTA <- NorTA - min(NorTA)
   
@@ -116,24 +131,27 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
   
   if(any(NorTA<0)) stop("the transformed data NorTA cannot have negative values.")
   
-  cor_normal = stats::cor(normal,method=method)
+  cor_normal = stats::cor(rnorm,method=method)
   cor_NorTA = stats::cor(NorTA,method=method)
   
   L1 <- NorTA/rowSums(NorTA)
   cor_L1 <- stats::cor(L1,method=method)
   
-  clr <- function(X){
-    if(any(X==0)) X <- X+1
+  .clr <- function(X){
+    if(any(X==0)){
+      min.x <- min(X[X>0])
+      X[X==0] <- .65*min.x
+    }
     ref <- apply(X, 1, function(x) mean(log(x)) )
     return(as.matrix(log(X) - ref))
   }
   
-  CLR <- clr(NorTA)
+  CLR <- .clr(NorTA)
   cor_CLR <- stats::cor(CLR,method=method)
   
   results <- list()
   results$cor <- cor
-  results$normal <- normal
+  results$normal <- rnorm
   results$cor_normal <- cor_normal 
   results$NorTA <- NorTA
   results$cor_NorTA <- cor_NorTA
@@ -144,61 +162,4 @@ toy_model <- function(n,cor,D,M,dist,param=list(),method="pearson",seed=42,
   class(results) <- "toy_model"
   
   return(results)
-}
-
-
-#' @name graph_toy_model
-#' @rdname graph_toy_model
-#' 
-#' @title Construct toy model network
-#' 
-#' @description construct an igraph object from toy_model object
-#' 
-#' @param obj toy_model class object.
-#' @param what normalization selected.
-#' 
-#' @importFrom igraph graph_from_adjacency_matrix V<- E<-
-#'
-#' @export
-graph_toy_model <- function(obj,what){
-  
-  if(class(obj)!="toy_model") stop("obj must belong to toy_model class")
-  what=match.arg(what,c("NorTA","L1","CLR"))
-  
-  x <- obj[[what]]
-  cor <- obj[[paste("cor_",what,sep="")]]
-  
-  
-  g <- graph_from_adjacency_matrix(adj=cor,mode="undirected",weighted=T,diag=F)
-  
-  V(g)$size <- 2 + (( colMeans(x) / max(colMeans(x))) * 4)
-  
-  E(g)$width <- abs(E(g)$weight)
-  E(g)$color <- ifelse(E(g)$weight>=0,rgb(0,0,1),rgb(1,0,0))
-  
-  return(g)
-}
-
-
-#' @name plot_toy_model
-#' @rdname plot_toy_model
-#' 
-#' @title Custom plot for toy_model
-#' 
-#' @description plot ring network with custom graphical properties
-#' 
-#' @param obj toy_model class object.
-#' @param what normalization selected.
-#' 
-#' @importFrom igraph plot.igraph layout_in_circle
-#'
-#' @export
-plot.toy_model <- function(obj,what,...){
-  
-  if(class(obj)!="toy_model") stop("obj must belong to toy_model class")
-  what=match.arg(what,c("NorTA","L1","CLR"))
-  
-  g <- graph_toy_model(obj,what)
-  
-  plot.igraph(g,layout=layout_in_circle(g),vertex.label=NA,...)
 }

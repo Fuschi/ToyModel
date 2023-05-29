@@ -4,7 +4,7 @@
 \alias{NorTA}
 \title{Normal To Anything}
 \usage{
-NorTA(n, cor, dist, param = list())
+NorTA(n, cor, qdist, param = NULL)
 }
 \arguments{
 \item{n}{number of observations.}
@@ -13,12 +13,19 @@ NorTA(n, cor, dist, param = list())
 correlation matrix. If it is a number it is understood that it is the
 correlation between two variables.}
 
-\item{dist}{characters indicate the chosen distribution.}
+\item{qdist}{quantile function of the selected distribution, it must the vector
+of probability as first argument called p. The other parameters names must match with
+the ones present in param list.}
 
-\item{param}{list containing the parameters of the distribution for each
-dimension. All elements in the list must be named as the parameter name of
-the distribution. If the elements have all lengths 1 the values are repeated
-for all the dimensions.}
+\item{param}{named array or matrix/data.frame with parameters of the selected target
+distribution indicated in qdist. If params is a matrix then it must contain
+the parameters of the final distribution along the columns and rows express
+each dimension equal to the dimension of the cor matrix, instead if it is a
+vector the parameters are repeated for each dimension. The names of the columns,
+or of the vector elements, must be equal to the function parameters of qdist.
+If some parameters are missing then the default values of the qdist function
+are chosen. Default value is NULL that indicates to use always the default
+parameters of qdist.}
 }
 \description{
 statistical technique to produce variables with correlation
