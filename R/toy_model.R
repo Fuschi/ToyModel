@@ -15,7 +15,7 @@
 #' @param M magnification factor, real positive number that modify the 
 #' heterogeneity of the samples. In practice the first variable is multiplied by 
 #' the factor M.
-#' @param qdist qdist quantile function of the selected distribution, it must the vector
+#' @param qdist quantile function of the selected distribution, it must the vector
 #' of probability as first argument called p. The other parameters names must match with
 #' the ones present in param list.
 #' @param param param named array or matrix/data.frame with parameters of the selected target 
@@ -29,7 +29,6 @@
 #' parameters of qdist.
 #' @param method type of correlation used. Possible choices are "pearson", 
 #' "kendall", "spearman" (default pearson). 
-#' @param seed random seed for reproducibility (default 42).
 #' @param force.positive logical, indicates when to force all generated NorTA 
 #' data to positive numbers, adding the minimum to all others (this passage does 
 #' not affect correlations).
@@ -51,7 +50,7 @@
 #' @importFrom stats pnorm cor
 #' 
 #' @export
-toy_model <- function(n,cor,M,qdist,param=NULL,method="pearson",seed=42,
+toy_model <- function(n,cor,M,qdist,param=NULL,method="pearson",
                       force.positive=FALSE){
   
   # START CHECKS
