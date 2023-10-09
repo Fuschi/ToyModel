@@ -11,7 +11,6 @@ toy_model(
   qdist,
   param = NULL,
   method = "pearson",
-  seed = 42,
   force.positive = FALSE
 )
 }
@@ -28,7 +27,7 @@ indicates the correlation between only two variables.}
 heterogeneity of the samples. In practice the first variable is multiplied by
 the factor M.}
 
-\item{qdist}{qdist quantile function of the selected distribution, it must the vector
+\item{qdist}{quantile function of the selected distribution, it must the vector
 of probability as first argument called p. The other parameters names must match with
 the ones present in param list.}
 
@@ -44,8 +43,6 @@ parameters of qdist.}
 
 \item{method}{type of correlation used. Possible choices are "pearson",
 "kendall", "spearman" (default pearson).}
-
-\item{seed}{random seed for reproducibility (default 42).}
 
 \item{force.positive}{logical, indicates when to force all generated NorTA
 data to positive numbers, adding the minimum to all others (this passage does
