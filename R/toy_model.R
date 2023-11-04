@@ -124,12 +124,16 @@ toy_model <- function(n,cor,M,qdist,param=NULL,method="pearson",
     NorTA[,d] <- do.call(what=qdist,args=param.d)
   }
   
+  # if(force.positive && any(NorTA<=0)){
+  #   NorTA <- apply(NorTA, 2, function(x){
+  #     xpos <- x - min(x)
+  #     xpos[xpos==0] <- .65*(min(xpos[xpos>0]))
+  #     return(xpos)
+  #   })}
   if(force.positive && any(NorTA<=0)){
-    NorTA <- apply(NorTA, 2, function(x){
-      xpos <- x - min(x)
-      xpos[xpos==0] <- .65*(min(xpos[xpos>0]))
-      return(xpos)
-    })}
+    NorTA <- NorTA - min(NorTA)
+    NorTA[NorTA==0] <- min(NorTA[NorTA>0])
+  }
   
   NorTA[,1] <- NorTA[,1]*M
   
