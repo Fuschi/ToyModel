@@ -125,9 +125,9 @@ toy_model <- function(n,cor,M,qdist,param=NULL,method="pearson",
   }
   
   if(force.positive && any(NorTA<=0)){
-    NorTA <- apply(Norta, 1, function(x){
+    NorTA <- apply(NorTA, 2, function(x){
       xpos <- x - min(x)
-      xpos[xpos==0] <- .5(min(xpos[xpos>0]))
+      xpos[xpos==0] <- .65*(min(xpos[xpos>0]))
       return(xpos)
     })}
   
