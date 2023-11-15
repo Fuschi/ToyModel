@@ -15,7 +15,6 @@ clr <- function(X){
     is.matrix(X) | is.vector(X)
     is.numeric(X)
     all(X>=0)
-    
     })
   
   # ZERO REPLACEMENTS
@@ -30,7 +29,7 @@ clr <- function(X){
   Y <- X + dl*(X==0)
   
   # CENTERED LOG-RATIO
-  ref <- apply(X, 1, function(x) mean(log(x)) )
-  return(as.matrix(log(X) - ref))
+  ref <- apply(Y, 1, function(x) mean(log(x)) )
+  return(as.matrix(log(Y) - ref))
 
 }
